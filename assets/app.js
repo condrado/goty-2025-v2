@@ -515,42 +515,45 @@ function renderCategory(catId) {
 	mainEl.appendChild(grid);
 	
 	   // Ajustar altura del grid dinámicamente calculando todos los elementos
-	   function ajustarAlturaNomineesGrid() {
-		   const nomineeGrid = document.querySelector('.nominees-grid');
-		   if (nomineeGrid) {
-			   const header = document.querySelector('header');
-			   const categoryHeader = document.querySelector('.category-header');
-			   const footer = document.querySelector('.selection-footer');
-			   const content = document.querySelector('.content');
-			   const body = document.body;
-			   const headerHeight = header ? header.offsetHeight : 0;
-			   const categoryHeaderHeight = categoryHeader ? categoryHeader.offsetHeight : 0;
-			   const categoryHeaderMarginBottom = categoryHeader ? parseInt(getComputedStyle(categoryHeader).marginBottom) : 0;
-			   const footerHeight = footer ? footer.offsetHeight : 0;
-			   const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
-			   const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
-			   const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
-			   const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
-			   const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
-			   // Debug: mostrar valores
-			   console.log('📏 Alturas calculadas:');
-			   console.log('  header:', headerHeight + 'px');
-			   console.log('  header margin-bottom:', headerMarginBottom + 'px');
-			   console.log('  categoryHeader:', categoryHeaderHeight + 'px');
-			   console.log('  categoryHeader margin-bottom:', categoryHeaderMarginBottom + 'px');
-			   console.log('  footer:', footerHeight + 'px');
-			   console.log('  content padding-top:', contentPaddingTop + 'px');
-			   console.log('  content padding-bottom:', contentPaddingBottom + 'px');
-			   console.log('  body padding-top:', bodyPaddingTop + 'px');
-			   console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
-			   const totalToSubtract = headerHeight + headerMarginBottom + categoryHeaderHeight + categoryHeaderMarginBottom + footerHeight + 
-				   contentPaddingTop + contentPaddingBottom + 
-				   bodyPaddingTop + bodyPaddingBottom;
-			   console.log('  TOTAL a restar:', totalToSubtract + 'px');
-			   console.log('  Altura final del grid: calc(100vh - ' + totalToSubtract + 'px)');
-			   nomineeGrid.style.height = `calc(100vh - ${totalToSubtract}px)`;
-		   }
-	   }
+	function ajustarAlturaNomineesGrid() {
+		const nomineeGrid = document.querySelector('.nominees-grid');
+		if (nomineeGrid) {
+			const header = document.querySelector('header');
+			const categoryHeader = document.querySelector('.category-header');
+			const footer = document.querySelector('.selection-footer');
+			const content = document.querySelector('.content');
+			const body = document.body;
+			const headerHeight = header ? header.offsetHeight : 0;
+			const categoryHeaderHeight = categoryHeader ? categoryHeader.offsetHeight : 0;
+			const categoryHeaderMarginBottom = categoryHeader ? parseInt(getComputedStyle(categoryHeader).marginBottom) : 0;
+			const footerHeight = footer ? footer.offsetHeight : 0;
+			const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
+			const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
+			const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
+			const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
+			const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
+			// Usar window.innerHeight para el alto visible real
+			const vh = window.innerHeight;
+			// Debug: mostrar valores
+			console.log('📏 Alturas calculadas:');
+			console.log('  window.innerHeight:', vh + 'px');
+			console.log('  header:', headerHeight + 'px');
+			console.log('  header margin-bottom:', headerMarginBottom + 'px');
+			console.log('  categoryHeader:', categoryHeaderHeight + 'px');
+			console.log('  categoryHeader margin-bottom:', categoryHeaderMarginBottom + 'px');
+			console.log('  footer:', footerHeight + 'px');
+			console.log('  content padding-top:', contentPaddingTop + 'px');
+			console.log('  content padding-bottom:', contentPaddingBottom + 'px');
+			console.log('  body padding-top:', bodyPaddingTop + 'px');
+			console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
+			const totalToSubtract = headerHeight + headerMarginBottom + categoryHeaderHeight + categoryHeaderMarginBottom + footerHeight + 
+				contentPaddingTop + contentPaddingBottom + 
+				bodyPaddingTop + bodyPaddingBottom;
+			console.log('  TOTAL a restar:', totalToSubtract + 'px');
+			console.log('  Altura final del grid: ' + (vh - totalToSubtract) + 'px');
+			nomineeGrid.style.height = (vh - totalToSubtract) + 'px';
+		}
+	}
 	   // Llamar tras renderizar
 	   requestAnimationFrame(ajustarAlturaNomineesGrid);
 	   // Llamar en cada resize
