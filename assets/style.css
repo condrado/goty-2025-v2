@@ -174,21 +174,6 @@ h1 {
   border-radius: 16px
 }
 
-.ranking-sidebar {
-  background: var(--card);
-  padding: 16px 16px 24px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  border-bottom: none;
-  max-height: 152px;
-  position: fixed;
-  bottom: 0;
-  left: 24px;
-  right: 24px;
-  margin-bottom: 24px;
-  z-index: 100
-}
-
 nav {
   background: var(--card);
   padding: 12px;
@@ -643,13 +628,6 @@ input[type="radio"] {
   display: flex;
   gap: 8px;
   align-items: center
-}
-
-.ranking-list {
-  display: flex;
-  flex-direction: row;
-  gap: 12px;
-  width: 100%
 }
 
 .rank-item {
@@ -1399,8 +1377,7 @@ input[type="radio"] {
   }
 
   header,
-  nav,
-  .ranking-sidebar {
+  nav {
     display: none
   }
 

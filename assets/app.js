@@ -77,61 +77,6 @@ function makeImgUrl(gameId, name) {
 // RENDER
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
-const rankingContent = document.getElementById('rankingContent');
-
-function updateRankingSidebar() {
-	const scores = computeScores();
-	const bingoData = loadBingoData();
-	rankingContent.innerHTML = '';
-	
-	if (getVoters().length === 0) {
-		const emptyMessage = document.createElement('div');
-		emptyMessage.style.textAlign = 'center';
-		emptyMessage.style.color = 'var(--muted)';
-		emptyMessage.style.fontSize = '13px';
-		emptyMessage.style.padding = '16px 8px';
-		emptyMessage.innerHTML = 'Aún no hay participantes.<br>Haz clic en <i data-lucide="user-plus" style="width:14px;height:14px;display:inline-block;vertical-align:middle"></i> para añadir.';
-		rankingContent.appendChild(emptyMessage);
-		if (typeof lucide !== 'undefined') {
-			lucide.createIcons();
-		}
-		return;
-	}
-	
-	// Mostrar líder de Bingo si estamos en la página de Bingo
-	const currentHash = location.hash || '#/';
-	if (currentHash.startsWith('#/bingo')) {
-		const bingoScores = {};
-		STATE.voters.forEach(voter => {
-			bingoScores[voter.initials] = {
-				completed: getBingoCount(bingoData, voter.initials),
-				total: getBingoTotal(bingoData, voter.initials)
-			};
-		});
-		
-		const sortedBingo = Object.entries(bingoScores).sort((a, b) => b[1].completed - a[1].completed);
-		
-		sortedBingo.forEach(([initials, counts]) => {
-			const item = document.createElement('div');
-			item.className = 'rank-item';
-			const customVoter = STATE.voters.find(v => v.initials === initials);
-			const displayName = customVoter ? customVoter.name : initials;
-			item.innerHTML = `<div><strong>${displayName}</strong></div><div class="rank-points">${counts.completed}/${counts.total}</div>`;
-			rankingContent.appendChild(item);
-		});
-		return;
-	}
-	
-	// Ranking normal por puntos de predicciones
-	Object.entries(scores).sort((a, b) => b[1] - a[1]).forEach(([name, pts]) => {
-		const item = document.createElement('div');
-		item.className = 'rank-item';
-		const customVoter = STATE.voters.find(v => v.initials === name);
-		const displayName = customVoter ? customVoter.name : name;
-		item.innerHTML = `<div><strong>${displayName}</strong></div><div class="rank-points">${pts} pts</div>`;
-		rankingContent.appendChild(item);
-	});
-}
 
 function renderNav(activeId) {
 	navEl.innerHTML = '';
@@ -208,7 +153,6 @@ function renderNav(activeId) {
 
 function renderHome() {
 	renderNav('home');
-	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
@@ -317,7 +261,6 @@ function renderHome() {
 function renderCategory(catId) {
 	const cat = CATEGORIES.find(c => c.id === catId);
 	renderNav(catId);
-	updateRankingSidebar();
 	if (!cat) { mainEl.innerHTML = '<p>Categoría no encontrada</p>'; return; }
 
 	// Ocultar botón reset del header
@@ -480,7 +423,6 @@ function renderCategory(catId) {
 
 function renderRanking() {
 	renderNav('ranking');
-	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
@@ -571,7 +513,6 @@ function guessNameFromId(id) {
 
 function renderBingo() {
 	renderNav('bingo');
-	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
@@ -924,7 +865,6 @@ document.addEventListener('click', (e) => {
 
 // Modal de gestión de participantes
 const votersModal = document.getElementById('votersModal');
-const manageVotersBtn = document.getElementById('manageVotersBtn');
 const closeModal = document.getElementById('closeModal');
 const addVoterBtn = document.getElementById('addVoterBtn');
 const voterNameInput = document.getElementById('voterName');
@@ -969,12 +909,6 @@ function renderVotersList() {
 	});
 }
 
-manageVotersBtn.addEventListener('click', () => {
-	votersModal.classList.add('show');
-	renderVotersList();
-	lucide.createIcons();
-});
-
 closeModal.addEventListener('click', () => {
 	votersModal.classList.remove('show');
 });
@@ -1015,7 +949,6 @@ addVoterBtn.addEventListener('click', () => {
 	voterInitialsInput.value = '';
 	
 	renderVotersList();
-	updateRankingSidebar();
 	route(); // Re-renderizar vista actual
 });
 
@@ -1057,4 +990,3 @@ themeToggle.addEventListener('click', () => {
 // inicial render
 loadTheme();
 route();
-updateRankingSidebar();
