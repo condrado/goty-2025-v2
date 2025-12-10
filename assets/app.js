@@ -1103,13 +1103,11 @@ addVoterBtn.addEventListener('click', () => {
 	route(); // Re-renderizar vista actual
 });
 
+
 function loadTheme() {
-	const savedTheme = localStorage.getItem(STORAGE_KEYS.theme) || 'dark';
-	if (savedTheme === 'light') {
-		document.documentElement.classList.add('light-theme');
-	} else {
-		document.documentElement.classList.remove('light-theme');
-	}
+    // Forzar siempre el tema dark como base
+    localStorage.setItem(STORAGE_KEYS.theme, 'dark');
+    document.documentElement.classList.remove('light-theme');
 }
 
 // inicial render
