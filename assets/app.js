@@ -9,63 +9,66 @@ const STORAGE_KEYS = {
 	bingo: 'tga2025_bingo' // formato: { voterInitials: [{ id, text, completed }] }
 };
 
-// carga/guarda
-function loadState() {
-	const rawPred = localStorage.getItem(STORAGE_KEYS.predictions);
-	const rawWin = localStorage.getItem(STORAGE_KEYS.winners);
-	const rawVoters = localStorage.getItem(STORAGE_KEYS.voters);
-	const rawSort = localStorage.getItem(STORAGE_KEYS.sortOrder);
-	try {
-		// Si no hay voters guardados o está vacío, usar los predefinidos de VOTERS
-		let voters = rawVoters ? JSON.parse(rawVoters) : [];
-		// Si no hay voters, usar los predefinidos
-		if (voters.length === 0 && VOTERS.length > 0) {
-			voters = VOTERS;
-			localStorage.setItem(STORAGE_KEYS.voters, JSON.stringify(VOTERS));
-		}
-		return {
-			predictions: rawPred ? JSON.parse(rawPred) : {},
-			winners: rawWin ? JSON.parse(rawWin) : {},
-			voters: voters,
-			sortOrder: rawSort || 'event'
-		}
-	} catch (e) {
-		console.error('Error parseando localStorage', e);
-		return { predictions: {}, winners: {}, voters: VOTERS, sortOrder: 'event' };
-	}
-}
-function saveState(state) {
-	localStorage.setItem(STORAGE_KEYS.predictions, JSON.stringify(state.predictions));
-	localStorage.setItem(STORAGE_KEYS.winners, JSON.stringify(state.winners));
-	localStorage.setItem(STORAGE_KEYS.voters, JSON.stringify(state.voters));
-	localStorage.setItem(STORAGE_KEYS.sortOrder, state.sortOrder);
-}
-
-// inicializa
-let STATE = loadState();
-
-// Estado del footer
+// Estado del footer (debe ir antes de cualquier uso)
 let FOOTER_STATE = {
 	voterName: null,
 	nomineeTitle: null,
 	categoryId: null
 };
-
-// Obtener lista de votantes
-function getVoters() {
+// carga/guarda
+function loadState() {
+	const rawPred = localStorage.getItem(STORAGE_KEYS.predictions);
+	const rawWin = localStorage.getItem(STORAGE_KEYS.winners);
+function ajustarAlturaGrid(selector) {
+	const gridEl = document.querySelector(selector);
+	if (gridEl) {
+		const header = document.querySelector('header');
+		const categoryHeader = document.querySelector('.category-header');
+		const footer = document.querySelector('.selection-footer');
+		const content = document.querySelector('.content');
+		const body = document.body;
+		const headerHeight = header ? header.offsetHeight : 0;
+		const categoryHeaderHeight = categoryHeader ? categoryHeader.offsetHeight : 0;
+		const categoryHeaderMarginBottom = categoryHeader ? parseInt(getComputedStyle(categoryHeader).marginBottom) : 0;
+		const footerHeight = footer ? footer.offsetHeight : 0;
+		const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
+		const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
+		const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
+		const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
+		const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
+		const vh = window.innerHeight;
+		// Debug: mostrar valores
+		console.log('📏 Alturas calculadas para', selector);
+		console.log('  window.innerHeight:', vh + 'px');
+		console.log('  header:', headerHeight + 'px');
+		console.log('  header margin-bottom:', headerMarginBottom + 'px');
+		console.log('  categoryHeader:', categoryHeaderHeight + 'px');
+		console.log('  categoryHeader margin-bottom:', categoryHeaderMarginBottom + 'px');
+		console.log('  footer:', footerHeight + 'px');
+		console.log('  content padding-top:', contentPaddingTop + 'px');
+		console.log('  content padding-bottom:', contentPaddingBottom + 'px');
+		console.log('  body padding-top:', bodyPaddingTop + 'px');
+		console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
+		const totalToSubtract = headerHeight + headerMarginBottom + categoryHeaderHeight + categoryHeaderMarginBottom + footerHeight +
+			contentPaddingTop + contentPaddingBottom +
+			bodyPaddingTop + bodyPaddingBottom;
+		console.log('  TOTAL a restar:', totalToSubtract + 'px');
+		console.log('  Altura final del grid:', (vh - totalToSubtract) + 'px');
+		gridEl.style.height = (vh - totalToSubtract) + 'px';
+	}
+}
 	return STATE.voters.map(v => v.initials);
 }
+requestAnimationFrame(() => ajustarAlturaGrid('.nominees-grid'));
+window.addEventListener('resize', () => ajustarAlturaGrid('.nominees-grid'));
 
-// Actualizar footer
 function updateFooter() {
 	const voterEl = document.getElementById('footerVoter');
 	const nomineeEl = document.getElementById('footerNominee');
 	const separatorEl = document.querySelector('.footer-separator');
-	
 	// Siempre mostrar el nombre del usuario
 	const userName = STATE.voters.length > 0 ? STATE.voters[0].name : 'Usuario';
 	voterEl.textContent = userName;
-	
 	// Mostrar nominee y separador solo si hay selección
 	if (FOOTER_STATE.nomineeTitle) {
 		nomineeEl.textContent = FOOTER_STATE.nomineeTitle;
@@ -325,7 +328,51 @@ function renderHome() {
 	// Renderizar inicialmente
 	renderCategories(STATE.sortOrder);
 	mainEl.appendChild(list);
-	
+
+	// Ajustar altura de .grid dinámicamente considerando header, header-wrapper, footer y paddings
+	function ajustarAlturaGridHome() {
+		requestAnimationFrame(() => {
+			const gridEl = document.querySelector('.grid');
+			if (gridEl) {
+				const header = document.querySelector('header');
+				const headerWrapper = document.querySelector('.header-wrapper');
+				const footer = document.querySelector('.selection-footer');
+				const content = document.querySelector('.content');
+				const body = document.body;
+				const headerHeight = header ? header.offsetHeight : 0;
+				const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
+				const headerWrapperHeight = headerWrapper ? headerWrapper.offsetHeight : 0;
+				const headerWrapperMarginBottom = headerWrapper ? parseInt(getComputedStyle(headerWrapper).marginBottom) : 0;
+				const footerHeight = footer ? footer.offsetHeight : 0;
+				const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
+				const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
+				const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
+				const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
+				const vh = window.innerHeight;
+				// Debug: mostrar valores
+				console.log('📏 Alturas .grid:');
+				console.log('  window.innerHeight:', vh + 'px');
+				console.log('  header:', headerHeight + 'px');
+				console.log('  header margin-bottom:', headerMarginBottom + 'px');
+				console.log('  header-wrapper:', headerWrapperHeight + 'px');
+				console.log('  header-wrapper margin-bottom:', headerWrapperMarginBottom + 'px');
+				console.log('  footer:', footerHeight + 'px');
+				console.log('  content padding-top:', contentPaddingTop + 'px');
+				console.log('  content padding-bottom:', contentPaddingBottom + 'px');
+				console.log('  body padding-top:', bodyPaddingTop + 'px');
+				console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
+				const totalToSubtract = headerHeight + headerMarginBottom + headerWrapperHeight + headerWrapperMarginBottom + footerHeight +
+					contentPaddingTop + contentPaddingBottom +
+					bodyPaddingTop + bodyPaddingBottom;
+				console.log('  TOTAL a restar:', totalToSubtract + 'px');
+				console.log('  Altura final .grid:', (vh - totalToSubtract) + 'px');
+				gridEl.style.height = (vh - totalToSubtract) + 'px';
+			}
+		});
+	}
+	ajustarAlturaGridHome();
+	window.addEventListener('resize', ajustarAlturaGridHome);
+
 	// Event listener para el cambio de ordenación
 	sortSelect.addEventListener('change', (e) => {
 		STATE.sortOrder = e.target.value;
@@ -856,47 +903,71 @@ function renderBingo() {
 }
 
 // Funciones auxiliares para Bingo
-function loadBingoData() {
-	const raw = localStorage.getItem(STORAGE_KEYS.bingo);
+
+function loadState() {
+	const rawPred = localStorage.getItem(STORAGE_KEYS.predictions);
+	const rawWin = localStorage.getItem(STORAGE_KEYS.winners);
+	const rawVoters = localStorage.getItem(STORAGE_KEYS.voters);
+	const rawSort = localStorage.getItem(STORAGE_KEYS.sortOrder);
 	try {
-		return raw ? JSON.parse(raw) : {};
+		let voters = rawVoters ? JSON.parse(rawVoters) : [];
+		if (typeof VOTERS !== 'undefined' && voters.length === 0 && VOTERS.length > 0) {
+			voters = VOTERS;
+			localStorage.setItem(STORAGE_KEYS.voters, JSON.stringify(VOTERS));
+		}
+		return {
+			predictions: rawPred ? JSON.parse(rawPred) : {},
+			winners: rawWin ? JSON.parse(rawWin) : {},
+			voters: voters,
+			sortOrder: rawSort || 'event'
+		}
 	} catch (e) {
-		return {};
+		console.error('Error parseando localStorage', e);
+		return { predictions: {}, winners: {}, voters: (typeof VOTERS !== 'undefined' ? VOTERS : []), sortOrder: 'event' };
 	}
 }
 
-function saveBingoData(data) {
-	localStorage.setItem(STORAGE_KEYS.bingo, JSON.stringify(data));
-}
-
-function addBingoItem(data, voterInitials, item) {
-	if (!data[voterInitials]) {
-		data[voterInitials] = [];
+function ajustarAlturaGrid(selector) {
+	const gridEl = document.querySelector(selector);
+	if (gridEl) {
+		const header = document.querySelector('header');
+		const categoryHeader = document.querySelector('.category-header');
+		const footer = document.querySelector('.selection-footer');
+		const content = document.querySelector('.content');
+		const body = document.body;
+		const headerHeight = header ? header.offsetHeight : 0;
+		const categoryHeaderHeight = categoryHeader ? categoryHeader.offsetHeight : 0;
+		const categoryHeaderMarginBottom = categoryHeader ? parseInt(getComputedStyle(categoryHeader).marginBottom) : 0;
+		const footerHeight = footer ? footer.offsetHeight : 0;
+		const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
+		const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
+		const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
+		const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
+		const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
+		const vh = window.innerHeight;
+		// Debug: mostrar valores
+		console.log('📏 Alturas calculadas para', selector);
+		console.log('  window.innerHeight:', vh + 'px');
+		console.log('  header:', headerHeight + 'px');
+		console.log('  header margin-bottom:', headerMarginBottom + 'px');
+		console.log('  categoryHeader:', categoryHeaderHeight + 'px');
+		console.log('  categoryHeader margin-bottom:', categoryHeaderMarginBottom + 'px');
+		console.log('  footer:', footerHeight + 'px');
+		console.log('  content padding-top:', contentPaddingTop + 'px');
+		console.log('  content padding-bottom:', contentPaddingBottom + 'px');
+		console.log('  body padding-top:', bodyPaddingTop + 'px');
+		console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
+		const totalToSubtract = headerHeight + headerMarginBottom + categoryHeaderHeight + categoryHeaderMarginBottom + footerHeight +
+			contentPaddingTop + contentPaddingBottom +
+			bodyPaddingTop + bodyPaddingBottom;
+		console.log('  TOTAL a restar:', totalToSubtract + 'px');
+		console.log('  Altura final del grid:', (vh - totalToSubtract) + 'px');
+		gridEl.style.height = (vh - totalToSubtract) + 'px';
 	}
-	data[voterInitials].push(item);
 }
 
-function deleteBingoItem(data, voterInitials, index) {
-	if (data[voterInitials]) {
-		data[voterInitials].splice(index, 1);
-	}
-}
-
-function toggleBingoItem(data, voterInitials, index, completed) {
-	if (data[voterInitials] && data[voterInitials][index]) {
-		data[voterInitials][index].completed = completed;
-	}
-}
-
-function isItemSelected(data, voterInitials, itemId) {
-	const items = data[voterInitials] || [];
-	return items.some(item => item.id === itemId);
-}
-
-function getBingoCount(data, voterInitials) {
-	const items = data[voterInitials] || [];
-	return items.filter(item => item.completed).length;
-}
+// inicializa
+let STATE = loadState();
 
 function getBingoTotal(data, voterInitials) {
 	const items = data[voterInitials] || [];
