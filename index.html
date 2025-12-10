@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Porra TGA 2025 — Votaciones</title>
+  <link rel="stylesheet" href="assets/style.css" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="menuToggle" class="menu-toggle" aria-label="Abrir menú">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+      <div class="header-title">
+        <img src="assets/images/tga_icon_original.svg" alt="TGA Icon" class="tga-icon tga-icon-dark">
+        <img src="assets/images/tga_icon_blue.svg" alt="TGA Icon" class="tga-icon tga-icon-light">
+        <div class="header-text">
+          <h1>The Game Awards 2025</h1>
+          <div class="header-subtitle">Haz tus predicciones y compite con tus amigos</div>
+        </div>
+      </div>
+      <div class="topbar">
+        <div class="category-search-container" id="headerSearch">
+          <input type="text" placeholder="Buscar categoría..." class="category-search-input" id="headerSearchInput">
+          <div class="category-search-results" id="headerSearchResults"></div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="themeToggle" class="icon-btn" aria-label="Cambiar tema" title="Cambiar tema">
+            <i data-lucide="sun" style="width:18px;height:18px"></i>
+          </button>
+          <button id="fullscreenToggle" class="icon-btn" aria-label="Pantalla completa" title="Pantalla completa">
+            <i data-lucide="expand" style="width:18px;height:18px"></i>
+          </button>
+          <button id="resetAll" class="winner-btn" style="display: none;">Restablecer todo</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="nav-overlay" id="navOverlay"></div>
+
+    <div class="layout">
+      <nav id="nav"></nav>
+      <main class="content" id="main">
+        <!-- SPA content inserted here -->
+      </main>
+    </div>
+
+    <aside class="ranking-sidebar" id="rankingSidebar">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:6px">
+          <i data-lucide="trophy" style="width:16px;height:16px"></i> Clasificación
+        </h3>
+        <button id="manageVotersBtn" class="icon-btn" aria-label="Gestionar participantes"
+          title="Gestionar participantes">
+          <i data-lucide="user-plus" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <div id="rankingContent" class="ranking-list">
+        <!-- Ranking content inserted here -->
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modal para gestionar participantes -->
+  <div id="votersModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Gestionar Participantes</h2>
+        <button class="modal-close" id="closeModal" aria-label="Cerrar">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="votersList" class="voters-list"></div>
+        <div class="add-voter-form">
+          <h3>Añadir participante</h3>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="text" id="voterName" placeholder="Nombre completo" maxlength="50" />
+            <input type="text" id="voterInitials" placeholder="Siglas (3 letras)" maxlength="3" style="width:120px" />
+          </div>
+          <button id="addVoterBtn" class="winner-btn">Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+
+</html>
