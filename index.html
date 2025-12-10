@@ -24,7 +24,7 @@
         <img src="assets/images/tga_icon_blue.svg" alt="TGA Icon" class="tga-icon tga-icon-light">
         <div class="header-text">
           <h1>The Game Awards 2025</h1>
-          <div class="header-subtitle">Haz tus predicciones y compite con tus amigos</div>
+          <div class="header-subtitle">Tus predicciones con tus amigos</div>
         </div>
       </div>
       <div class="topbar">
@@ -33,12 +33,6 @@
           <div class="category-search-results" id="headerSearchResults"></div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
-          <button id="themeToggle" class="icon-btn" aria-label="Cambiar tema" title="Cambiar tema">
-            <i data-lucide="sun" style="width:18px;height:18px"></i>
-          </button>
-          <button id="fullscreenToggle" class="icon-btn" aria-label="Pantalla completa" title="Pantalla completa">
-            <i data-lucide="expand" style="width:18px;height:18px"></i>
-          </button>
           <button id="resetAll" class="winner-btn" style="display: none;">Restablecer todo</button>
         </div>
       </div>
@@ -52,7 +46,31 @@
         <!-- SPA content inserted here -->
       </main>
     </div>
+
+    <aside class="ranking-sidebar" id="rankingSidebar" style="display: none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:6px">
+          <i data-lucide="trophy" style="width:16px;height:16px"></i> Clasificación
+        </h3>
+        <button id="manageVotersBtn" class="icon-btn" aria-label="Gestionar participantes"
+          title="Gestionar participantes">
+          <i data-lucide="user-plus" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <div id="rankingContent" class="ranking-list">
+        <!-- Ranking content inserted here -->
+      </div>
+    </aside>
   </div>
+
+  <!-- Footer con selección actual -->
+  <footer id="selectionFooter" class="selection-footer">
+    <div class="selection-content">
+      <span id="footerVoter"></span>
+      <span class="footer-separator" style="display: none;">•</span>
+      <span id="footerNominee"></span>
+    </div>
+  </footer>
 
   <!-- Modal para gestionar participantes -->
   <div id="votersModal" class="modal">

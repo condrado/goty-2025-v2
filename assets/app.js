@@ -44,9 +44,36 @@ function saveState(state) {
 // inicializa
 let STATE = loadState();
 
+// Estado del footer
+let FOOTER_STATE = {
+	voterName: null,
+	nomineeTitle: null,
+	categoryId: null
+};
+
 // Obtener lista de votantes
 function getVoters() {
 	return STATE.voters.map(v => v.initials);
+}
+
+// Actualizar footer
+function updateFooter() {
+	const voterEl = document.getElementById('footerVoter');
+	const nomineeEl = document.getElementById('footerNominee');
+	const separatorEl = document.querySelector('.footer-separator');
+	
+	// Siempre mostrar el nombre del usuario
+	const userName = STATE.voters.length > 0 ? STATE.voters[0].name : 'Usuario';
+	voterEl.textContent = userName;
+	
+	// Mostrar nominee y separador solo si hay selección
+	if (FOOTER_STATE.nomineeTitle) {
+		nomineeEl.textContent = FOOTER_STATE.nomineeTitle;
+		separatorEl.style.display = 'inline';
+	} else {
+		nomineeEl.textContent = '';
+		separatorEl.style.display = 'none';
+	}
 }
 
 // Obtener nombre formateado del votante
@@ -77,6 +104,46 @@ function makeImgUrl(gameId, name) {
 // RENDER
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
+const rankingContent = document.getElementById('rankingContent');
+const rankingSidebar = document.getElementById('rankingSidebar');
+
+function updateRankingSidebar() {
+	const currentHash = location.hash || '#/';
+	
+	// Solo mostrar el sidebar en la página de ranking
+	if (!currentHash.startsWith('#/ranking')) {
+		rankingSidebar.style.display = 'none';
+		return;
+	}
+	
+	rankingSidebar.style.display = 'block';
+	const scores = computeScores();
+	rankingContent.innerHTML = '';
+	
+	if (getVoters().length === 0) {
+		const emptyMessage = document.createElement('div');
+		emptyMessage.style.textAlign = 'center';
+		emptyMessage.style.color = 'var(--muted)';
+		emptyMessage.style.fontSize = '13px';
+		emptyMessage.style.padding = '16px 8px';
+		emptyMessage.innerHTML = 'Aún no hay participantes.<br>Haz clic en <i data-lucide="user-plus" style="width:14px;height:14px;display:inline-block;vertical-align:middle"></i> para añadir.';
+		rankingContent.appendChild(emptyMessage);
+		if (typeof lucide !== 'undefined') {
+			lucide.createIcons();
+		}
+		return;
+	}
+	
+	// Ranking por puntos de predicciones
+	Object.entries(scores).sort((a, b) => b[1] - a[1]).forEach(([name, pts]) => {
+		const item = document.createElement('div');
+		item.className = 'rank-item';
+		const customVoter = STATE.voters.find(v => v.initials === name);
+		const displayName = customVoter ? customVoter.name : name;
+		item.innerHTML = `<div><strong>${displayName}</strong></div><div class="rank-points">${pts} pts</div>`;
+		rankingContent.appendChild(item);
+	});
+}
 
 function renderNav(activeId) {
 	navEl.innerHTML = '';
@@ -153,10 +220,20 @@ function renderNav(activeId) {
 
 function renderHome() {
 	renderNav('home');
+	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
 	document.getElementById('resetAll').style.display = 'none';
+	
+	// Ocultar botones de navegación de categorías y expandir buscador
+	const categoryNav = document.querySelector('.category-nav');
+	const searchContainer = document.getElementById('headerSearch');
+	if (categoryNav) categoryNav.style.display = 'none';
+	if (searchContainer) searchContainer.style.width = '100%';
+	
+	// Actualizar footer para mantener la última selección
+	updateFooter();
 	
 	// Header wrapper con filtro y botón reset
 	const headerWrapper = document.createElement('div');
@@ -166,22 +243,22 @@ function renderHome() {
 	h.innerHTML = '<i data-lucide="trophy" class="lucide-icon"></i> Categorías';
 	
 	const controlsWrapper = document.createElement('div');
-	controlsWrapper.style.display = 'flex';
-	controlsWrapper.style.gap = '12px';
-	controlsWrapper.style.alignItems = 'center';
+	controlsWrapper.className = 'header-controls';
 	
 	// Desplegable de ordenación
 	const sortSelect = document.createElement('select');
 	sortSelect.className = 'sort-select';
 	sortSelect.innerHTML = `
-		<option value="event">Ordenar por evento</option>
-		<option value="alphabetical">Ordenar alfabéticamente</option>
+		<option value="event">Evento</option>
+		<option value="alphabetical">Alfabéticamente</option>
 	`;
 	sortSelect.value = STATE.sortOrder;
 	
 	const resetBtn = document.createElement('button');
 	resetBtn.className = 'winner-btn';
-	resetBtn.textContent = 'Restablecer todo';
+	resetBtn.innerHTML = '<i data-lucide="rotate-ccw" style="width:18px;height:18px"></i>';
+	resetBtn.setAttribute('aria-label', 'Restablecer todo');
+	resetBtn.setAttribute('title', 'Restablecer todo');
 	resetBtn.addEventListener('click', () => {
 		if (!confirm('¿Restablecer todas las predicciones, ganadores y participantes? (se borrará todo del localStorage)')) return;
 		STATE = { predictions: {}, winners: {}, voters: VOTERS, sortOrder: 'event' }; 
@@ -261,12 +338,36 @@ function renderHome() {
 function renderCategory(catId) {
 	const cat = CATEGORIES.find(c => c.id === catId);
 	renderNav(catId);
+	updateRankingSidebar();
 	if (!cat) { mainEl.innerHTML = '<p>Categoría no encontrada</p>'; return; }
 
 	// Ocultar botón reset del header
 	document.getElementById('resetAll').style.display = 'none';
 
 	mainEl.innerHTML = '';
+	
+	// Mostrar botones de navegación de categorías y restaurar ancho del buscador
+	const categoryNav = document.querySelector('.category-nav');
+	const searchContainer = document.getElementById('headerSearch');
+	if (categoryNav) categoryNav.style.display = 'flex';
+	if (searchContainer) searchContainer.style.width = '';
+	
+	// Actualizar footer con la selección de esta categoría
+	const winnerId = STATE.winners[catId];
+	if (winnerId) {
+		const winnerGame = cat.games.find(g => g.id === winnerId);
+		if (winnerGame) {
+			FOOTER_STATE.nomineeTitle = winnerGame.name || guessNameFromId(winnerId);
+			FOOTER_STATE.categoryId = catId;
+		} else {
+			FOOTER_STATE.nomineeTitle = null;
+			FOOTER_STATE.categoryId = null;
+		}
+	} else {
+		FOOTER_STATE.nomineeTitle = null;
+		FOOTER_STATE.categoryId = null;
+	}
+	updateFooter();
 	
 	// Header de categoría
 	const header = document.createElement('div'); header.className = 'category-header';
@@ -279,24 +380,46 @@ function renderCategory(catId) {
 	
 	const navButtons = document.createElement('div'); navButtons.className = 'category-nav';
 	
+	// Botón anterior (siempre se crea)
+	const prevBtn = document.createElement('button');
+	prevBtn.className = 'category-nav-btn prev icon-btn';
+	prevBtn.innerHTML = '<i data-lucide="chevron-left" style="width:18px;height:18px"></i>';
+	prevBtn.setAttribute('aria-label', 'Categoría anterior');
+	prevBtn.setAttribute('title', 'Categoría anterior');
 	if (prevCat) {
-		const prevBtn = document.createElement('button');
-		prevBtn.className = 'category-nav-btn prev';
-		prevBtn.innerHTML = '<i data-lucide="chevron-left" class="lucide-icon"></i> Anterior';
 		prevBtn.addEventListener('click', () => {
 			window.location.hash = `#/category/${prevCat.id}`;
 		});
-		navButtons.appendChild(prevBtn);
+	} else {
+		prevBtn.style.visibility = 'hidden';
 	}
+	navButtons.appendChild(prevBtn);
 	
+	// Botón siguiente (siempre se crea)
+	const nextBtn = document.createElement('button');
+	nextBtn.className = 'category-nav-btn next icon-btn';
+	nextBtn.innerHTML = '<i data-lucide="chevron-right" style="width:18px;height:18px"></i>';
+	nextBtn.setAttribute('aria-label', 'Siguiente categoría');
+	nextBtn.setAttribute('title', 'Siguiente categoría');
 	if (nextCat) {
-		const nextBtn = document.createElement('button');
-		nextBtn.className = 'category-nav-btn next';
-		nextBtn.innerHTML = 'Siguiente <i data-lucide="chevron-right" class="lucide-icon"></i>';
 		nextBtn.addEventListener('click', () => {
 			window.location.hash = `#/category/${nextCat.id}`;
 		});
-		navButtons.appendChild(nextBtn);
+	} else {
+		nextBtn.style.visibility = 'hidden';
+	}
+	navButtons.appendChild(nextBtn);
+	
+	// Insertar botones en el header junto al search
+	const headerSearchContainer = document.getElementById('headerSearch');
+	if (headerSearchContainer && headerSearchContainer.parentElement) {
+		// Buscar si ya hay botones de navegación previos y eliminarlos
+		const existingNavBtns = headerSearchContainer.parentElement.querySelector('.category-nav');
+		if (existingNavBtns) {
+			existingNavBtns.remove();
+		}
+		// Insertar los nuevos botones después del search
+		headerSearchContainer.parentElement.insertBefore(navButtons, headerSearchContainer.nextSibling);
 	}
 	
 	const headerTop = document.createElement('div'); headerTop.className = 'category-header-top';
@@ -308,14 +431,9 @@ function renderCategory(catId) {
 	titleEs.textContent = ' ' + cat.titleEs;
 	h.appendChild(titleEn);
 	h.appendChild(titleEs);
-	const subtitle = document.createElement('p'); 
-	subtitle.className = 'category-subtitle';
-	subtitle.textContent = `${cat.games.length} nominados • Selecciona tu predicción y marca el ganador`;
 	
 	headerTop.appendChild(h);
-	headerTop.appendChild(navButtons);
 	header.appendChild(headerTop);
-	header.appendChild(subtitle);
 	mainEl.appendChild(header);
 
 	const grid = document.createElement('div'); grid.className = 'nominees-grid';
@@ -349,46 +467,8 @@ function renderCategory(catId) {
 			info.appendChild(winnerBadge);
 		}
 
-		// Predicciones de votantes
-		const predictions = document.createElement('div'); 
-		predictions.className = 'nominee-predictions';
-		
-		getVoters().forEach(voter => {
-			const isPredicted = STATE.predictions[catId] && STATE.predictions[catId][voter] === gid;
-			const voterChip = document.createElement('button');
-			voterChip.className = 'voter-chip' + (isPredicted ? ' active' : '');
-			// Mostrar solo el nombre sin siglas
-			const customVoter = STATE.voters.find(v => v.initials === voter);
-			voterChip.textContent = customVoter ? customVoter.name : voter;
-			voterChip.setAttribute('data-voter', voter);
-			voterChip.addEventListener('click', (e) => {
-				e.stopPropagation();
-				e.preventDefault();
-				
-				// Toggle prediction
-				STATE.predictions[catId] = STATE.predictions[catId] || {};
-				const wasActive = STATE.predictions[catId][voter] === gid;
-				
-				if (wasActive) {
-					delete STATE.predictions[catId][voter];
-					voterChip.classList.remove('active');
-				} else {
-					// Remover active de todos los chips de este votante en esta categoría
-					document.querySelectorAll(`.voter-chip[data-voter="${voter}"]`).forEach(chip => {
-						chip.classList.remove('active');
-					});
-					STATE.predictions[catId][voter] = gid;
-					voterChip.classList.add('active');
-				}
-				saveState(STATE);
-				updateRankingSidebar();
-			});
-			predictions.appendChild(voterChip);
-		});
-
 		// Ensamblar card
 		info.appendChild(title);
-		info.appendChild(predictions);
 		
 		card.appendChild(imageContainer);
 		card.appendChild(info);
@@ -398,22 +478,87 @@ function renderCategory(catId) {
 			// No toggle si se hizo click en un voter chip
 			if (e.target.classList.contains('voter-chip')) return;
 			
+			// Guardar posición del scroll antes de re-renderizar
+			const grid = document.querySelector('.nominees-grid');
+			const scrollPos = grid ? grid.scrollTop : 0;
+			
 			if (STATE.winners[catId] === gid) {
 				delete STATE.winners[catId];
+				// Limpiar footer si se deselecciona
+				if (FOOTER_STATE.categoryId === catId) {
+					FOOTER_STATE.nomineeTitle = null;
+					FOOTER_STATE.categoryId = null;
+					updateFooter();
+				}
 			} else {
 				STATE.winners[catId] = gid;
+				// Actualizar footer con la selección
+				FOOTER_STATE.nomineeTitle = gname;
+				FOOTER_STATE.categoryId = catId;
+				updateFooter();
 			}
 			saveState(STATE);
 			renderCategory(catId);
+			
+			// Restaurar posición del scroll después de re-renderizar
+			requestAnimationFrame(() => {
+				const newGrid = document.querySelector('.nominees-grid');
+				if (newGrid) {
+					newGrid.scrollTop = scrollPos;
+				}
+			});
 		});
 		
-		grid.appendChild(card);
-		card.appendChild(imageContainer);
-		card.appendChild(info);
 		grid.appendChild(card);
 	});
 
 	mainEl.appendChild(grid);
+	
+	// Ajustar altura del grid dinámicamente calculando todos los elementos
+	requestAnimationFrame(() => {
+		const nomineeGrid = document.querySelector('.nominees-grid');
+		if (nomineeGrid) {
+			// Obtener altura de cada elemento del DOM
+			const header = document.querySelector('header');
+			const categoryHeader = document.querySelector('.category-header');
+			const footer = document.querySelector('.selection-footer');
+			const content = document.querySelector('.content');
+			const body = document.body;
+			
+			// Calcular espacios
+			const headerHeight = header ? header.offsetHeight : 0;
+			const categoryHeaderHeight = categoryHeader ? categoryHeader.offsetHeight : 0;
+			const categoryHeaderMarginBottom = categoryHeader ? parseInt(getComputedStyle(categoryHeader).marginBottom) : 0;
+			const footerHeight = footer ? footer.offsetHeight : 0;
+			const contentPaddingTop = content ? parseInt(getComputedStyle(content).paddingTop) : 0;
+			const contentPaddingBottom = content ? parseInt(getComputedStyle(content).paddingBottom) : 0;
+			const bodyPaddingTop = parseInt(getComputedStyle(body).paddingTop);
+			const bodyPaddingBottom = parseInt(getComputedStyle(body).paddingBottom);
+			const headerMarginBottom = header ? parseInt(getComputedStyle(header).marginBottom) : 0;
+			
+			// Debug: mostrar valores
+			console.log('📏 Alturas calculadas:');
+			console.log('  header:', headerHeight + 'px');
+			console.log('  header margin-bottom:', headerMarginBottom + 'px');
+			console.log('  categoryHeader:', categoryHeaderHeight + 'px');
+			console.log('  categoryHeader margin-bottom:', categoryHeaderMarginBottom + 'px');
+			console.log('  footer:', footerHeight + 'px');
+			console.log('  content padding-top:', contentPaddingTop + 'px');
+			console.log('  content padding-bottom:', contentPaddingBottom + 'px');
+			console.log('  body padding-top:', bodyPaddingTop + 'px');
+			console.log('  body padding-bottom:', bodyPaddingBottom + 'px');
+			
+			// Calcular altura total a restar
+			const totalToSubtract = headerHeight + headerMarginBottom + categoryHeaderHeight + categoryHeaderMarginBottom + footerHeight + 
+				contentPaddingTop + contentPaddingBottom + 
+				bodyPaddingTop + bodyPaddingBottom;
+			
+			console.log('  TOTAL a restar:', totalToSubtract + 'px');
+			console.log('  Altura final del grid: calc(100vh - ' + totalToSubtract + 'px)');
+			
+			nomineeGrid.style.height = `calc(100vh - ${totalToSubtract}px)`;
+		}
+	});
 	
 	// Inicializar iconos de lucide en las categorías
 	if (typeof lucide !== 'undefined') {
@@ -423,10 +568,20 @@ function renderCategory(catId) {
 
 function renderRanking() {
 	renderNav('ranking');
+	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
 	document.getElementById('resetAll').style.display = 'none';
+	
+	// Ocultar botones de navegación de categorías y expandir buscador
+	const categoryNav = document.querySelector('.category-nav');
+	const searchContainer = document.getElementById('headerSearch');
+	if (categoryNav) categoryNav.style.display = 'none';
+	if (searchContainer) searchContainer.style.width = '100%';
+	
+	// Actualizar footer para mantener la última selección
+	updateFooter();
 	
 	const h = document.createElement('h2'); 
 	h.className = 'page-title';
@@ -513,10 +668,20 @@ function guessNameFromId(id) {
 
 function renderBingo() {
 	renderNav('bingo');
+	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
 	// Ocultar botón reset del header
 	document.getElementById('resetAll').style.display = 'none';
+	
+	// Ocultar botones de navegación de categorías y expandir buscador
+	const categoryNav = document.querySelector('.category-nav');
+	const searchContainer = document.getElementById('headerSearch');
+	if (categoryNav) categoryNav.style.display = 'none';
+	if (searchContainer) searchContainer.style.width = '100%';
+	
+	// Actualizar footer para mantener la última selección
+	updateFooter();
 	
 	const h = document.createElement('h2'); 
 	h.className = 'page-title';
@@ -752,31 +917,7 @@ function route() {
 	}
 }
 
-// Fullscreen toggle
-function toggleFullscreen() {
-	if (!document.fullscreenElement) {
-		document.documentElement.requestFullscreen().then(() => {
-			const btn = document.querySelector('#fullscreenToggle');
-			if (btn) {
-				btn.innerHTML = '<i data-lucide="shrink" style="width:18px;height:18px"></i>';
-				lucide.createIcons();
-			}
-		});
-	} else {
-		if (document.exitFullscreen) {
-			document.exitFullscreen().then(() => {
-				const btn = document.querySelector('#fullscreenToggle');
-				if (btn) {
-					btn.innerHTML = '<i data-lucide="expand" style="width:18px;height:18px"></i>';
-					lucide.createIcons();
-				}
-			});
-		}
-	}
-}
-
 window.addEventListener('hashchange', route);
-	document.getElementById('fullscreenToggle').addEventListener('click', toggleFullscreen);
 
 	document.getElementById('resetAll').addEventListener('click', () => {
 	if (!confirm('¿Restablecer todas las predicciones, ganadores y participantes? (se borrará todo del localStorage)')) return;
@@ -812,7 +953,9 @@ navOverlay.addEventListener('click', closeMenu);
 
 // Cerrar menú al hacer clic en un enlace
 navEl2.addEventListener('click', (e) => {
-	if (e.target.tagName === 'A') {
+	// Buscar el elemento <a> más cercano (puede ser el target o un ancestro)
+	const link = e.target.closest('a');
+	if (link && navEl2.contains(link)) {
 		closeMenu();
 	}
 });
@@ -865,6 +1008,7 @@ document.addEventListener('click', (e) => {
 
 // Modal de gestión de participantes
 const votersModal = document.getElementById('votersModal');
+const manageVotersBtn = document.getElementById('manageVotersBtn');
 const closeModal = document.getElementById('closeModal');
 const addVoterBtn = document.getElementById('addVoterBtn');
 const voterNameInput = document.getElementById('voterName');
@@ -898,16 +1042,22 @@ function renderVotersList() {
 						delete STATE.predictions[catId][initials];
 					}
 				});
-				// Eliminar votante
-				STATE.voters.splice(index, 1);
-				saveState(STATE);
-				renderVotersList();
-				updateRankingSidebar();
-				route(); // Re-renderizar vista actual
+			// Eliminar votante
+			STATE.voters.splice(index, 1);
+			saveState(STATE);
+			renderVotersList();
+			updateRankingSidebar();
+			route(); // Re-renderizar vista actual
 			}
 		});
 	});
 }
+
+manageVotersBtn.addEventListener('click', () => {
+	votersModal.classList.add('show');
+	renderVotersList();
+	lucide.createIcons();
+});
 
 closeModal.addEventListener('click', () => {
 	votersModal.classList.remove('show');
@@ -949,44 +1099,21 @@ addVoterBtn.addEventListener('click', () => {
 	voterInitialsInput.value = '';
 	
 	renderVotersList();
+	updateRankingSidebar();
 	route(); // Re-renderizar vista actual
 });
-
-// Theme toggle
-const themeToggle = document.getElementById('themeToggle');
-const root = document.documentElement;
-
-function updateThemeIcon(theme) {
-	// Vaciar el botón y recrear el icono
-	const iconName = theme === 'light' ? 'moon' : 'sun';
-	themeToggle.innerHTML = `<i data-lucide="${iconName}" style="width:18px;height:18px"></i>`;
-	lucide.createIcons();
-}
 
 function loadTheme() {
 	const savedTheme = localStorage.getItem(STORAGE_KEYS.theme) || 'dark';
 	if (savedTheme === 'light') {
-		root.classList.add('light-theme');
+		document.documentElement.classList.add('light-theme');
 	} else {
-		root.classList.remove('light-theme');
+		document.documentElement.classList.remove('light-theme');
 	}
-	updateThemeIcon(savedTheme);
 }
-
-themeToggle.addEventListener('click', () => {
-	const isLight = root.classList.contains('light-theme');
-	
-	if (isLight) {
-		root.classList.remove('light-theme');
-		localStorage.setItem(STORAGE_KEYS.theme, 'dark');
-		updateThemeIcon('dark');
-	} else {
-		root.classList.add('light-theme');
-		localStorage.setItem(STORAGE_KEYS.theme, 'light');
-		updateThemeIcon('light');
-	}
-});
 
 // inicial render
 loadTheme();
 route();
+updateRankingSidebar();
+updateFooter();

@@ -106,23 +106,23 @@ body {
 
 header {
   display: flex;
-  gap: 24px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  flex-wrap: wrap;
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .header-title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 12px;
   pointer-events: none;
+  width: calc(100% - 44px);
 }
 
 .tga-icon {
@@ -161,23 +161,42 @@ h1 {
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
   position: relative;
-  height: calc(100vh - 176px - 48px - 60px)
 }
 
 .content {
   background: var(--glass);
-  padding: 24px;
-  border-radius: 16px
+  padding: 16px;
+  border-radius: 16px;
+  margin-bottom: 8px;
+}
+
+.ranking-sidebar {
+  background: var(--card);
+  padding: 16px 16px 24px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  max-height: 152px;
+  position: fixed;
+  bottom: 0;
+  left: 24px;
+  right: 24px;
+  margin-bottom: 24px;
+  z-index: 100
+}
+
+.ranking-list {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  width: 100%
 }
 
 nav {
   background: var(--card);
   padding: 12px;
-  border-radius: 16px;
+  border-radius: 0;
   position: fixed;
   top: 0;
   left: -400px;
@@ -414,9 +433,15 @@ nav a.nav-link-row {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  margin-bottom: 24px;
-  padding-bottom: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.header-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .header-wrapper h2 {
@@ -439,7 +464,7 @@ nav a.nav-link-row {
 
 .category-search-container {
   position: relative;
-  width: 250px;
+  width: calc(100% - 8px - 38px - 8px - 38px);
 }
 
 /* Clases para ranking breakdown */
@@ -577,24 +602,24 @@ input[type="radio"] {
 }
 
 .winner-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
   background: var(--hover-bg);
   border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  width: 38px;
   height: 38px;
   display: flex;
-  align-items: center
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--muted);
+  padding: 0;
 }
 
 .winner-btn:hover {
   background: var(--glass);
-  border-color: var(--accent-aqua);
-  color: var(--text-primary)
+  border-color: var(--muted);
+  color: var(--text-primary);
 }
 
 .sort-select {
@@ -608,7 +633,8 @@ input[type="radio"] {
   cursor: pointer;
   transition: all 0.2s ease;
   outline: none;
-  height: 38px
+  height: 38px;
+  width: 138px;
 }
 
 .sort-select:hover,
@@ -627,7 +653,9 @@ input[type="radio"] {
 .topbar {
   display: flex;
   gap: 8px;
-  align-items: center
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
 }
 
 .rank-item {
@@ -646,8 +674,8 @@ input[type="radio"] {
 
 /* Nuevo diseño de páginas de categoría */
 .category-header {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border-color)
 }
 
@@ -656,27 +684,22 @@ input[type="radio"] {
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  margin-bottom: 8px
+  margin-bottom: 0
 }
 
-.category-header h2 {
-  font-size: 32px;
+.category-header h2,
+.header-wrapper h2 {
+  font-size: 18px;
   font-weight: 700;
   margin: 0;
-  color: var(--text-primary)
+  color: var(--text-primary);
+  width: 100%;
 }
 
 .category-header h2 .title-es {
-  font-size: 18px;
-  color: var(--text-secondary);
-  font-weight: 400;
-}
-
-.category-subtitle {
-  color: var(--text-secondary);
   font-size: 14px;
+  color: var(--text-secondary);
   font-weight: 400;
-  margin: 0
 }
 
 .category-nav {
@@ -686,48 +709,21 @@ input[type="radio"] {
 }
 
 .category-nav-btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  background: var(--hover-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  min-height: 38px;
-}
-
-.category-nav-btn:hover {
-  background: var(--glass);
-  border-color: var(--accent-aqua);
-  color: var(--text-primary)
-}
-
-.category-nav-btn span {
-  font-size: 16px;
-  transition: transform 0.2s ease
-}
-
-.category-nav-btn.prev:hover span {
-  transform: translateX(-2px)
-}
-
-.category-nav-btn.next:hover span {
-  transform: translateX(2px)
+  /* Los estilos base se heredan de .icon-btn */
 }
 
 .nominees-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 24px;
   margin-bottom: 0;
-  height: calc(100vh - 284px - 48px - 116px)
+  overflow: auto;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+.nominees-grid::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari */
 }
 
 .nominee-card {
@@ -739,8 +735,12 @@ input[type="radio"] {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  height: 100%;
-  cursor: pointer
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.nominee-card:last-child {
+  margin-bottom: 0;
 }
 
 .nominee-card:hover {
@@ -760,15 +760,14 @@ input[type="radio"] {
 .nominee-image {
   position: relative;
   width: 100%;
+  height: 150px;
   flex: 0 1 auto;
-  max-height: 200px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   overflow: hidden
 }
 
 .nominee-image img {
   width: 100%;
-  height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease
 }
@@ -779,8 +778,9 @@ input[type="radio"] {
 
 .winner-badge {
   position: absolute;
-  top: 20px;
-  right: 16px;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
   background: #10b981;
   color: #ffffff;
   width: 36px;
@@ -806,17 +806,10 @@ input[type="radio"] {
   color: var(--text-primary);
   margin: 0;
   line-height: 1.4;
-  min-height: 44px;
   max-width: calc(100% - 50px);
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.nominee-predictions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap
 }
 
 .voter-chip {
@@ -1134,6 +1127,10 @@ input[type="radio"] {
 }
 
 @media (max-width: 768px) {
+  body {
+    padding: 8px;
+  }
+
   .bingo-grid {
     grid-template-columns: 1fr;
   }
@@ -1370,6 +1367,46 @@ input[type="radio"] {
   background: rgba(34, 197, 94, 0.1);
 }
 
+/* Footer de selección */
+.selection-footer {
+  position: fixed;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  background: var(--glass);
+  border-top: 1px solid var(--border-color);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  z-index: 900;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selection-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.selection-content #footerVoter {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+.selection-content #footerNominee {
+  font-weight: 500;
+}
+
+.footer-separator {
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+
 @media print {
   body {
     background: white;
@@ -1377,7 +1414,9 @@ input[type="radio"] {
   }
 
   header,
-  nav {
+  nav,
+  .ranking-sidebar,
+  .selection-footer {
     display: none
   }
 
