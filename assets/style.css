@@ -1,3 +1,66 @@
+/* Forzar color blanco en el SVG del icono de borrar usuario */
+.delete-user-btn svg,
+.delete-user-btn .lucide-icon-sm {
+  color: #fff !important;
+  fill: #fff !important;
+  stroke: #fff !important;
+}
+
+/* Home: header-actions ocupa 100% y layout de input/botón */
+.header-actions {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+}
+
+#newParticipantInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: calc(100% - 8px - 38px);
+}
+
+#addParticipantBtn {
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Estilos para .voter-item.user-card (antes en línea) */
+.voter-item.user-card {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--glass);
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: box-shadow 0.2s, border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+/* Igualar estilos de selección de usuario a .nominee-card.is-winner */
+.voter-item.active,
+.user-card.active {
+  border-color: #10b981 !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
+  background: var(--glass);
+  /* Mantener fondo, pero puedes cambiar si quieres más feedback */
+  color: #10b981;
+}
+
+.voter-item.active:hover,
+.user-card.active:hover {
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4) !important;
+}
+
 .page-title {
   font-size: 18px;
   font-weight: 700;
@@ -1298,7 +1361,7 @@ input[type="radio"] {
   height: 20px;
   min-width: 20px;
   border: 2px solid var(--border-color);
-  border-radius: 4px;
+  color: #fff;
   background: var(--bg);
   cursor: pointer;
   position: relative;

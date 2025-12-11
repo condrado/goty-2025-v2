@@ -1,3 +1,184 @@
+// --- HOME: Selector de usuario ---
+function renderHomeMain() {
+	mainEl.innerHTML = '';
+	// Ocultar el buscador de categorías en la home y mostrar .header-actions solo en la home
+	const headerSearch = document.getElementById('headerSearch');
+	if (headerSearch) headerSearch.style.display = 'none';
+	const headerActions = document.querySelector('.header-actions');
+	if (headerActions) headerActions.style.display = 'flex';
+	const title = document.createElement('h2');
+	title.className = 'page-title';
+	title.innerHTML = '<i data-lucide="users" class="lucide-icon"></i> Participantes';
+	mainEl.appendChild(title);
+
+	const grid = document.createElement('div');
+	grid.className = 'user-grid';
+	const selectedInitials = localStorage.getItem('tga2025_selectedUser');
+	STATE.voters.forEach((voter, idx) => {
+		const card = document.createElement('div');
+		card.className = 'voter-item user-card';
+		card.innerHTML = `<div class="voter-info"><strong>${voter.name}</strong><span>${voter.initials}</span></div>`;
+		if (voter.initials === selectedInitials) {
+			card.classList.add('active');
+		}
+		// Selección de usuario
+		card.addEventListener('click', (e) => {
+			// Evitar que el click en el botón de borrar seleccione el usuario
+			if (e.target.classList.contains('delete-user-btn')) return;
+			localStorage.setItem('tga2025_selectedUser', voter.initials);
+			updateFooter();
+			renderHomeMain();
+		});
+		// Botón de borrar usuario
+		const deleteBtn = document.createElement('button');
+		deleteBtn.className = 'delete-user-btn';
+		deleteBtn.title = 'Eliminar participante';
+		deleteBtn.innerHTML = '<i data-lucide="x" class="lucide-icon-sm"></i>';
+		deleteBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			if (!confirm(`¿Eliminar participante ${voter.name} (${voter.initials})?`)) return;
+			STATE.voters.splice(idx, 1);
+			// Si era el usuario seleccionado, quitar selección
+			if (selectedInitials === voter.initials) {
+				localStorage.removeItem('tga2025_selectedUser');
+			}
+			saveState(STATE);
+			renderHomeMain();
+			updateFooter();
+		});
+		card.appendChild(deleteBtn);
+		grid.appendChild(card);
+	});
+	mainEl.appendChild(grid);
+
+	// Lógica para añadir nuevo participante
+	const newInput = document.getElementById('newParticipantInput');
+	const addBtn = document.getElementById('addParticipantBtn');
+	if (newInput && addBtn) {
+		addBtn.onclick = () => {
+			const name = newInput.value.trim();
+			if (!name) {
+				alert('Introduce el nombre del participante');
+				return;
+			}
+			// Generar siglas automáticas (3 primeras letras mayúsculas, sin espacios)
+			let initials = name.replace(/\s+/g, '').substring(0,3).toUpperCase();
+			if (initials.length < 3) {
+				alert('El nombre debe tener al menos 3 letras para generar siglas');
+				return;
+			}
+			// Verificar si ya existe
+			if (STATE.voters.some(v => v.initials === initials)) {
+				alert('Ya existe un participante con esas siglas');
+				return;
+			}
+			STATE.voters.push({ name, initials });
+			saveState(STATE);
+			newInput.value = '';
+			renderHomeMain();
+			updateFooter();
+		};
+	}
+
+	if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// --- Adaptar nominaciones para usuario activo ---
+function getActiveUserInitials() {
+	return localStorage.getItem('tga2025_selectedUser');
+}
+
+// Ejemplo de cómo guardar una nominación por usuario
+function saveNomination(categoryId, nomineeId) {
+	const initials = getActiveUserInitials();
+	if (!initials) return;
+	if (!STATE.nominations) STATE.nominations = {};
+	if (!STATE.nominations[initials]) STATE.nominations[initials] = {};
+	STATE.nominations[initials][categoryId] = nomineeId;
+	saveState(STATE);
+
+	// Actualizar FOOTER_STATE para reflejar la selección
+	if (nomineeId) {
+		// Buscar el nombre del juego seleccionado
+		const cat = CATEGORIES.find(c => c.id === categoryId);
+		let nomineeTitle = null;
+		if (cat) {
+			const game = cat.games.find(g => g.id === nomineeId);
+			nomineeTitle = game ? game.name : guessNameFromId(nomineeId);
+		}
+		FOOTER_STATE.nomineeTitle = nomineeTitle;
+		FOOTER_STATE.categoryId = categoryId;
+	} else {
+		FOOTER_STATE.nomineeTitle = null;
+		FOOTER_STATE.categoryId = null;
+	}
+	updateFooter();
+}
+
+// Ejemplo de cómo obtener la nominación del usuario activo
+function getNomination(categoryId) {
+	const initials = getActiveUserInitials();
+	if (!initials || !STATE.nominations || !STATE.nominations[initials]) return null;
+	return STATE.nominations[initials][categoryId] || null;
+}
+
+// Hook en el router para mostrar la home principal y siempre renderizar el menú lateral
+const originalRoute = route;
+window.route = function() {
+	const hash = location.hash || '#/';
+	let activeId = '';
+	// Lógica de visibilidad global para .category-search-container y .header-actions
+	const headerSearch = document.getElementById('headerSearch');
+	const headerActions = document.querySelector('.header-actions');
+	if (hash === '#/' || hash === '') {
+		activeId = 'participantes';
+		if (headerSearch) headerSearch.style.display = 'none';
+		if (headerActions) headerActions.style.display = 'flex';
+		// Ocultar botones de navegación de categorías en home
+		const categoryNav = document.querySelector('.category-nav');
+		if (categoryNav) categoryNav.style.display = 'none';
+		renderNav(activeId);
+		renderHomeMain();
+	} else {
+		if (headerSearch) headerSearch.style.display = 'block';
+		if (headerActions) headerActions.style.display = 'none';
+		// Ajustar ancho del buscador en #/categorias, #/ranking y #/bingo
+		if (headerSearch) {
+			if (hash === '#/categorias' || hash.startsWith('#/ranking') || hash.startsWith('#/bingo')) {
+				headerSearch.style.width = '100%';
+			} else {
+				headerSearch.style.width = '';
+			}
+		}
+		const categoryNav = document.querySelector('.category-nav');
+		// Mostrar/ocultar category-nav solo en nominaciones
+		if (/^#\/category\//.test(hash)) {
+			if (categoryNav) categoryNav.style.display = 'flex';
+		} else {
+			if (categoryNav) categoryNav.style.display = 'none';
+		}
+		if (hash === '#/categorias') {
+			activeId = 'categorias';
+			renderNav(activeId);
+			if (typeof renderHome === 'function') renderHome();
+		} else if (/^#\/category\//.test(hash)) {
+			activeId = 'categorias';
+			renderNav(activeId);
+			const match = hash.match(/^#\/category\/([^\/]+)/);
+			if (match && typeof renderCategory === 'function') renderCategory(match[1]);
+		} else if (hash.startsWith('#/ranking')) {
+			activeId = 'ranking';
+			renderNav(activeId);
+			if (typeof renderRanking === 'function') renderRanking();
+		} else if (hash.startsWith('#/bingo')) {
+			activeId = 'bingo';
+			renderNav(activeId);
+			if (typeof renderBingo === 'function') renderBingo();
+		} else {
+			originalRoute();
+		}
+	}
+};
 
 // sessionStorage keys
 const STORAGE_KEYS = {
@@ -6,7 +187,8 @@ const STORAGE_KEYS = {
 	voters: 'tga2025_voters', // formato: [{ name: string, initials: string }]
 	sortOrder: 'tga2025_sortOrder', // formato: 'event' | 'alphabetical'
 	theme: 'tga2025_theme', // formato: 'dark' | 'light'
-	bingo: 'tga2025_bingo' // formato: { voterInitials: [{ id, text, completed }] }
+	bingo: 'tga2025_bingo', // formato: { voterInitials: [{ id, text, completed }] }
+	nominations: 'tga2025_nominations' // NUEVO: nominaciones por usuario
 };
 
 // Estado del footer (debe ir antes de cualquier uso)
@@ -66,12 +248,44 @@ function updateFooter() {
 	const voterEl = document.getElementById('footerVoter');
 	const nomineeEl = document.getElementById('footerNominee');
 	const separatorEl = document.querySelector('.footer-separator');
-	// Siempre mostrar el nombre del usuario
-	const userName = STATE.voters.length > 0 ? STATE.voters[0].name : 'Usuario';
+	// Mostrar el usuario seleccionado en el footer
+	const selectedInitials = localStorage.getItem('tga2025_selectedUser');
+	let userName = 'Usuario';
+	if (selectedInitials) {
+		const user = STATE.voters.find(v => v.initials === selectedInitials);
+		if (user) userName = user.name;
+	} else if (STATE.voters.length > 0) {
+		userName = STATE.voters[0].name;
+	}
 	voterEl.textContent = userName;
-	// Mostrar nominee y separador solo si hay selección
-	if (FOOTER_STATE.nomineeTitle) {
-		nomineeEl.textContent = FOOTER_STATE.nomineeTitle;
+	// Mostrar el título del juego seleccionado para la categoría activa
+	// (No usar FOOTER_STATE.nomineeTitle, solo calcularlo dinámicamente)
+	// Obtener la categoría activa
+	const hash = location.hash || '';
+	let catId = null;
+	if (hash.startsWith('#/category/')) {
+		catId = hash.split('/')[2];
+	} else if (FOOTER_STATE.categoryId) {
+		catId = FOOTER_STATE.categoryId;
+	}
+
+	// Obtener el id del juego seleccionado para este usuario y categoría
+	let nomineeTitle = '';
+	if (selectedInitials && catId && STATE.nominations && STATE.nominations[selectedInitials]) {
+		const nomineeId = STATE.nominations[selectedInitials][catId];
+		if (nomineeId) {
+			// Buscar el nombre del juego en CATEGORIES
+			for (const cat of CATEGORIES) {
+				if (cat.id === catId) {
+					const game = cat.games.find(g => g.id === nomineeId);
+					nomineeTitle = game ? game.name : nomineeId;
+					break;
+				}
+			}
+		}
+	}
+	if (nomineeTitle) {
+		nomineeEl.textContent = nomineeTitle;
 		separatorEl.style.display = 'inline';
 	} else {
 		nomineeEl.textContent = '';
@@ -154,27 +368,35 @@ function renderNav(activeId) {
 	// Contenedor de enlaces fijos
 	const fixedLinks = document.createElement('div');
 	fixedLinks.className = 'nav-fixed';
-	
+
+	// Participantes (Home principal)
+	const participantes = document.createElement('a');
+	participantes.href = '#/';
+	participantes.className = activeId === 'participantes' ? 'active nav-link-row' : 'nav-link-row';
+	participantes.innerHTML = '<i data-lucide="users" class="lucide-icon"></i> Participantes';
+	fixedLinks.appendChild(participantes);
+
+	// Categorías
 	const home = document.createElement('a');
-	home.href = '#/';
-	home.className = activeId === 'home' ? 'active nav-link-row' : 'nav-link-row';
+	home.href = '#/categorias';
+	home.className = activeId === 'categorias' ? 'active nav-link-row' : 'nav-link-row';
 	home.innerHTML = '<i data-lucide="trophy" class="lucide-icon"></i> Categorías';
 	fixedLinks.appendChild(home);
-	
+
+	// Ranking
 	const rank = document.createElement('a');
 	rank.href = '#/ranking';
-	rank.className = 'nav-link-row';
+	rank.className = activeId === 'ranking' ? 'active nav-link-row' : 'nav-link-row';
 	rank.innerHTML = '<i data-lucide="bar-chart-3" class="lucide-icon"></i> Desglose del ranking';
-	if (activeId === 'ranking') rank.classList.add('active');
 	fixedLinks.appendChild(rank);
-	
+
+	// Bingo
 	const bingo = document.createElement('a');
 	bingo.href = '#/bingo';
-	bingo.className = 'nav-link-row';
+	bingo.className = activeId === 'bingo' ? 'active nav-link-row' : 'nav-link-row';
 	bingo.innerHTML = '<i data-lucide="grid-3x3" class="lucide-icon"></i> Bingo';
-	if (activeId === 'bingo') bingo.classList.add('active');
 	fixedLinks.appendChild(bingo);
-	
+
 	navEl.appendChild(fixedLinks);
 	
 	// Contenedor scrollable de categorías
@@ -185,10 +407,8 @@ function renderNav(activeId) {
 		const a = document.createElement('a');
 		a.href = '#/category/' + cat.id;
 		a.className = 'nav-link-row';
-		
 		// Verificar si la categoría tiene ganador
 		const hasWinner = STATE.winners[cat.id];
-		
 		if (hasWinner) {
 			const iconSpan = document.createElement('span');
 			iconSpan.className = 'nav-winner-icon';
@@ -196,7 +416,6 @@ function renderNav(activeId) {
 			a.appendChild(iconSpan);
 			a.classList.add('has-winner');
 		}
-		
 		const textSpan = document.createElement('span');
 		textSpan.className = 'nav-text-column';
 		const titleEn = document.createElement('span');
@@ -208,7 +427,6 @@ function renderNav(activeId) {
 		textSpan.appendChild(titleEn);
 		textSpan.appendChild(titleEs);
 		a.appendChild(textSpan);
-		
 		if (cat.id === activeId) a.classList.add('active');
 		scrollableCategories.appendChild(a);
 	});
@@ -222,7 +440,7 @@ function renderNav(activeId) {
 }
 
 function renderHome() {
-	renderNav('home');
+	// renderNav('home');
 	updateRankingSidebar();
 	mainEl.innerHTML = '';
 	
@@ -393,11 +611,14 @@ function renderCategory(catId) {
 
 	mainEl.innerHTML = '';
 	
-	// Mostrar botones de navegación de categorías y restaurar ancho del buscador
+	// Mostrar el buscador de categorías en todas las páginas menos en la home
 	const categoryNav = document.querySelector('.category-nav');
 	const searchContainer = document.getElementById('headerSearch');
 	if (categoryNav) categoryNav.style.display = 'flex';
-	if (searchContainer) searchContainer.style.width = '';
+	if (searchContainer) searchContainer.style.display = 'block';
+	// Ocultar .header-actions fuera de la home
+	const headerActions = document.querySelector('.header-actions');
+	if (headerActions) headerActions.style.display = 'none';
 	
 	// Actualizar footer con la selección de esta categoría
 	const winnerId = STATE.winners[catId];
@@ -487,8 +708,10 @@ function renderCategory(catId) {
 	cat.games.forEach(game => {
 		const gid = game.id;
 		const gname = game.name || guessNameFromId(gid);
-		const isWinner = STATE.winners[catId] === gid;
-		
+		// Usar nominación del usuario activo
+		const userInitials = getActiveUserInitials();
+		const isWinner = getNomination(catId) === gid;
+
 		const card = document.createElement('div');
 		card.className = 'nominee-card' + (isWinner ? ' is-winner' : '');
 
@@ -516,46 +739,26 @@ function renderCategory(catId) {
 
 		// Ensamblar card
 		info.appendChild(title);
-		
 		card.appendChild(imageContainer);
 		card.appendChild(info);
-		
+
 		// Click en toda la card para marcar ganador
 		card.addEventListener('click', (e) => {
-			// No toggle si se hizo click en un voter chip
 			if (e.target.classList.contains('voter-chip')) return;
-			
-			// Guardar posición del scroll antes de re-renderizar
 			const grid = document.querySelector('.nominees-grid');
 			const scrollPos = grid ? grid.scrollTop : 0;
-			
-			if (STATE.winners[catId] === gid) {
-				delete STATE.winners[catId];
-				// Limpiar footer si se deselecciona
-				if (FOOTER_STATE.categoryId === catId) {
-					FOOTER_STATE.nomineeTitle = null;
-					FOOTER_STATE.categoryId = null;
-					updateFooter();
-				}
+			if (getNomination(catId) === gid) {
+				// Deseleccionar
+				saveNomination(catId, null);
 			} else {
-				STATE.winners[catId] = gid;
-				// Actualizar footer con la selección
-				FOOTER_STATE.nomineeTitle = gname;
-				FOOTER_STATE.categoryId = catId;
-				updateFooter();
+				saveNomination(catId, gid);
 			}
-			saveState(STATE);
 			renderCategory(catId);
-			
-			// Restaurar posición del scroll después de re-renderizar
 			requestAnimationFrame(() => {
 				const newGrid = document.querySelector('.nominees-grid');
-				if (newGrid) {
-					newGrid.scrollTop = scrollPos;
-				}
+				if (newGrid) newGrid.scrollTop = scrollPos;
 			});
 		});
-		
 		grid.appendChild(card);
 	});
 
@@ -624,7 +827,10 @@ function renderRanking() {
 	const categoryNav = document.querySelector('.category-nav');
 	const searchContainer = document.getElementById('headerSearch');
 	if (categoryNav) categoryNav.style.display = 'none';
-	if (searchContainer) searchContainer.style.width = '100%';
+	if (searchContainer) searchContainer.style.display = 'block';
+	// Ocultar .header-actions fuera de la home
+	const headerActions = document.querySelector('.header-actions');
+	if (headerActions) headerActions.style.display = 'none';
 	
 	// Actualizar footer para mantener la última selección
 	updateFooter();
@@ -724,7 +930,10 @@ function renderBingo() {
 	const categoryNav = document.querySelector('.category-nav');
 	const searchContainer = document.getElementById('headerSearch');
 	if (categoryNav) categoryNav.style.display = 'none';
-	if (searchContainer) searchContainer.style.width = '100%';
+	if (searchContainer) searchContainer.style.display = 'block';
+	// Ocultar .header-actions fuera de la home
+	const headerActions = document.querySelector('.header-actions');
+	if (headerActions) headerActions.style.display = 'none';
 	
 	// Actualizar footer para mantener la última selección
 	updateFooter();
@@ -909,6 +1118,7 @@ function loadState() {
 	const rawWin = localStorage.getItem(STORAGE_KEYS.winners);
 	const rawVoters = localStorage.getItem(STORAGE_KEYS.voters);
 	const rawSort = localStorage.getItem(STORAGE_KEYS.sortOrder);
+	const rawNoms = localStorage.getItem(STORAGE_KEYS.nominations);
 	try {
 		let voters = rawVoters ? JSON.parse(rawVoters) : [];
 		if (typeof VOTERS !== 'undefined' && voters.length === 0 && VOTERS.length > 0) {
@@ -919,11 +1129,12 @@ function loadState() {
 			predictions: rawPred ? JSON.parse(rawPred) : {},
 			winners: rawWin ? JSON.parse(rawWin) : {},
 			voters: voters,
-			sortOrder: rawSort || 'event'
+			sortOrder: rawSort || 'event',
+			nominations: rawNoms ? JSON.parse(rawNoms) : {} // cargar nominaciones
 		}
 	} catch (e) {
 		console.error('Error parseando localStorage', e);
-		return { predictions: {}, winners: {}, voters: (typeof VOTERS !== 'undefined' ? VOTERS : []), sortOrder: 'event' };
+		return { predictions: {}, winners: {}, voters: (typeof VOTERS !== 'undefined' ? VOTERS : []), sortOrder: 'event', nominations: {} };
 	}
 }
 
@@ -963,6 +1174,50 @@ function ajustarAlturaGrid(selector) {
 		console.log('  TOTAL a restar:', totalToSubtract + 'px');
 		console.log('  Altura final del grid:', (vh - totalToSubtract) + 'px');
 		gridEl.style.height = (vh - totalToSubtract) + 'px';
+	}
+}
+
+
+// Guarda el estado completo en localStorage
+function saveState(state) {
+	try {
+		localStorage.setItem(STORAGE_KEYS.predictions, JSON.stringify(state.predictions || {}));
+		localStorage.setItem(STORAGE_KEYS.winners, JSON.stringify(state.winners || {}));
+		localStorage.setItem(STORAGE_KEYS.voters, JSON.stringify(state.voters || []));
+		localStorage.setItem(STORAGE_KEYS.sortOrder, state.sortOrder || 'event');
+		localStorage.setItem(STORAGE_KEYS.nominations, JSON.stringify(state.nominations || {}));
+	} catch (e) {
+		console.error('Error guardando en localStorage', e);
+	}
+	// Mostrar el título del juego seleccionado para la categoría activa
+	let nomineeTitle = null;
+	// Determinar la categoría activa desde el hash
+	const hash = location.hash || '';
+	let catId = null;
+	if (hash.startsWith('#/category/')) {
+		catId = hash.split('/')[2];
+	} else if (FOOTER_STATE.categoryId) {
+		catId = FOOTER_STATE.categoryId;
+	}
+	if (selectedInitials && catId && STATE.nominations && STATE.nominations[selectedInitials]) {
+		const nomineeId = STATE.nominations[selectedInitials][catId];
+		if (nomineeId) {
+			// Buscar el nombre del juego
+			const cat = CATEGORIES.find(c => c.id === catId);
+			if (cat) {
+				const game = cat.games.find(g => g.id === nomineeId);
+				nomineeTitle = game ? game.name : guessNameFromId(nomineeId);
+			} else {
+				nomineeTitle = guessNameFromId(nomineeId);
+			}
+		}
+	}
+	if (nomineeTitle) {
+		nomineeEl.textContent = nomineeTitle;
+		separatorEl.style.display = 'inline';
+	} else {
+		nomineeEl.textContent = '';
+		separatorEl.style.display = 'none';
 	}
 }
 
@@ -1079,50 +1334,51 @@ document.addEventListener('click', (e) => {
 // Modal de gestión de participantes
 const votersModal = document.getElementById('votersModal');
 const manageVotersBtn = document.getElementById('manageVotersBtn');
-const closeModal = document.getElementById('closeModal');
-const addVoterBtn = document.getElementById('addVoterBtn');
-const voterNameInput = document.getElementById('voterName');
-const voterInitialsInput = document.getElementById('voterInitials');
-const votersList = document.getElementById('votersList');
+	const voterEl = document.getElementById('footerVoter');
+	const nomineeEl = document.getElementById('footerNominee');
+	const separatorEl = document.querySelector('.footer-separator');
+	// Mostrar el usuario seleccionado en el footer
+	let selectedInitials = localStorage.getItem('tga2025_selectedUser');
+	let userName = 'Usuario';
+	if (selectedInitials) {
+		const user = STATE.voters.find(v => v.initials === selectedInitials);
+		if (user) userName = user.name;
+	} else if (STATE.voters.length > 0) {
+		userName = STATE.voters[0].name;
+	}
+	voterEl.textContent = userName;
 
-function renderVotersList() {
-	votersList.innerHTML = '';
-	STATE.voters.forEach((voter, index) => {
-		const item = document.createElement('div');
-		item.className = 'voter-item';
-		item.innerHTML = `
-			<div class="voter-info">
-				<strong>${voter.name} (${voter.initials})</strong>
-			</div>
-			<button class="delete-voter-btn" data-index="${index}">Eliminar</button>
-		`;
-		votersList.appendChild(item);
-	});
-	
-	// Event listeners para eliminar
-	document.querySelectorAll('.delete-voter-btn').forEach(btn => {
-		btn.addEventListener('click', () => {
-			const index = parseInt(btn.dataset.index);
-			const voter = STATE.voters[index];
-			if (confirm(`¿Eliminar a ${voter.name}? Se borrarán todas sus predicciones.`)) {
-				// Eliminar predicciones del votante
-				const initials = voter.initials;
-				Object.keys(STATE.predictions).forEach(catId => {
-					if (STATE.predictions[catId][initials]) {
-						delete STATE.predictions[catId][initials];
-					}
-				});
-			// Eliminar votante
-			STATE.voters.splice(index, 1);
-			saveState(STATE);
-			renderVotersList();
-			updateRankingSidebar();
-			route(); // Re-renderizar vista actual
+	// Obtener la categoría activa
+	const hash = location.hash || '';
+	let catId = null;
+	if (hash.startsWith('#/category/')) {
+		catId = hash.split('/')[2];
+	} else if (FOOTER_STATE.categoryId) {
+		catId = FOOTER_STATE.categoryId;
+	}
+
+	// Obtener el id del juego seleccionado para este usuario y categoría
+	let nomineeTitle = '';
+	if (selectedInitials && catId && STATE.nominations && STATE.nominations[selectedInitials]) {
+		const nomineeId = STATE.nominations[selectedInitials][catId];
+		if (nomineeId) {
+			// Buscar el nombre del juego en CATEGORIES
+			for (const cat of CATEGORIES) {
+				if (cat.id === catId) {
+					const game = cat.games.find(g => g.id === nomineeId);
+					nomineeTitle = game ? game.name : nomineeId;
+					break;
+				}
 			}
-		});
-	});
-}
-
+		}
+	}
+	if (nomineeTitle) {
+		nomineeEl.textContent = nomineeTitle;
+		separatorEl.style.display = 'inline';
+	} else {
+		nomineeEl.textContent = '';
+		separatorEl.style.display = 'none';
+	}
 manageVotersBtn.addEventListener('click', () => {
 	votersModal.classList.add('show');
 	renderVotersList();

@@ -32,7 +32,11 @@
           <input type="text" placeholder="Buscar categoría..." class="category-search-input" id="headerSearchInput">
           <div class="category-search-results" id="headerSearchResults"></div>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div class="header-actions">
+          <input type="text" id="newParticipantInput" class="category-search-input" placeholder="Nuevo participante">
+          <button id="addParticipantBtn" class="winner-btn" title="Añadir participante">
+            <i data-lucide="user-plus" class="lucide-icon"></i>
+          </button>
           <button id="resetAll" class="winner-btn" style="display: none;">Restablecer todo</button>
         </div>
       </div>
