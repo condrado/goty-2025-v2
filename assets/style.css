@@ -2,7 +2,7 @@
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 16px;
   width: 100%;
   justify-content: space-around;
 }
@@ -331,7 +331,7 @@ nav.open {
 .nav-scrollable {
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px
+  padding-right: 12px
 }
 
 .menu-toggle {
@@ -640,8 +640,10 @@ nav a.nav-link-row {
   border-color: rgba(245, 158, 11, 0.25)
 }
 
-.card.has-winner {
-  border-color: #10b981;
+
+.card.has-winner,
+nav a.nav-link-row.has-winner {
+  border: 1px solid #10b981;
   box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
@@ -1492,6 +1494,7 @@ input[type="radio"] {
   font-size: 14px;
   color: var(--text-primary);
   width: 100%;
+  justify-content: center;
 }
 
 .selection-content #footerVoter {

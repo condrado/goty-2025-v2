@@ -23,7 +23,7 @@ function renderHomeMain() {
 	STATE.voters.forEach((voter, idx) => {
 		const card = document.createElement('div');
 		card.className = 'voter-item user-card';
-		card.innerHTML = `<div class="voter-info"><strong>${voter.name}</strong><span>${voter.initials}</span></div>`;
+		card.innerHTML = `<div class=\"voter-info\"><strong>${voter.name}</strong><span>${voter.initials}</span></div>`;
 		if (voter.initials === selectedInitials) {
 			card.classList.add('active');
 		}
@@ -31,6 +31,7 @@ function renderHomeMain() {
 		card.addEventListener('click', (e) => {
 			if (e.target.classList.contains('delete-user-btn')) return;
 			localStorage.setItem('tga2025_selectedUser', voter.initials);
+			renderNav(); // Actualiza el menú de navegación al cambiar de usuario
 			updateFooter();
 			renderHomeMain();
 		});
@@ -435,33 +436,39 @@ function renderNav(activeId) {
 	const scrollableCategories = document.createElement('div');
 	scrollableCategories.className = 'nav-scrollable';
 
-	getSortedCategories().forEach(cat => {
-		const a = document.createElement('a');
-		a.href = '#/category/' + cat.id;
-		a.className = 'nav-link-row';
-		// Verificar si la categoría tiene ganador
-		const hasWinner = STATE.winners[cat.id];
-		if (hasWinner) {
-			const iconSpan = document.createElement('span');
-			iconSpan.className = 'nav-winner-icon';
-			iconSpan.textContent = '✓';
-			a.appendChild(iconSpan);
-			a.classList.add('has-winner');
-		}
-		const textSpan = document.createElement('span');
-		textSpan.className = 'nav-text-column';
-		const titleEn = document.createElement('span');
-		titleEn.className = 'nav-title-en';
-		titleEn.textContent = cat.title;
-		const titleEs = document.createElement('span');
-		titleEs.className = 'nav-title-es';
-		titleEs.textContent = cat.titleEs;
-		textSpan.appendChild(titleEn);
-		textSpan.appendChild(titleEs);
-		a.appendChild(textSpan);
-		if (cat.id === activeId) a.classList.add('active');
-		scrollableCategories.appendChild(a);
-	});
+	       const userInitials = getActiveUserInitials();
+	       getSortedCategories().forEach(cat => {
+		       const a = document.createElement('a');
+		       a.href = '#/category/' + cat.id;
+		       a.className = 'nav-link-row';
+		       // Verificar si la categoría tiene ganador
+		       const hasWinner = STATE.winners[cat.id];
+		       if (hasWinner) {
+			       const iconSpan = document.createElement('span');
+			       iconSpan.className = 'nav-winner-icon';
+			       iconSpan.textContent = '✓';
+			       a.appendChild(iconSpan);
+			       a.classList.add('has-winner');
+		       }
+		       // Añadir .has-winner si el usuario activo tiene nominación en esta categoría
+		       const userHasNomination = userInitials && STATE.nominations && STATE.nominations[userInitials] && STATE.nominations[userInitials][cat.id];
+		       if (userHasNomination) {
+			       a.classList.add('has-winner');
+		       }
+		       const textSpan = document.createElement('span');
+		       textSpan.className = 'nav-text-column';
+		       const titleEn = document.createElement('span');
+		       titleEn.className = 'nav-title-en';
+		       titleEn.textContent = cat.title;
+		       const titleEs = document.createElement('span');
+		       titleEs.className = 'nav-title-es';
+		       titleEs.textContent = cat.titleEs;
+		       textSpan.appendChild(titleEn);
+		       textSpan.appendChild(titleEs);
+		       a.appendChild(textSpan);
+		       if (cat.id === activeId) a.classList.add('active');
+		       scrollableCategories.appendChild(a);
+	       });
 
 	navEl.appendChild(scrollableCategories);
 	
@@ -539,39 +546,46 @@ function renderHome() {
 		list.innerHTML = '';
 		let categoriesToRender = getSortedCategories();
 		
+		const userInitials = getActiveUserInitials();
 		categoriesToRender.forEach(cat => {
-		const card = document.createElement('a');
-		card.className = 'card';
-		card.href = '#/category/' + cat.id;
-		
-		// Verificar si la categoría tiene ganador
-		const hasWinner = STATE.winners[cat.id];
-		if (hasWinner) {
-			card.classList.add('has-winner');
-		}
-		
-		const m = document.createElement('div');
-		m.style.flex = '1';
-		const title = document.createElement('h3'); 
-		
-		// Añadir icono de check si tiene ganador
-		if (hasWinner) {
-			const winnerIcon = document.createElement('span');
-			winnerIcon.className = 'nav-winner-icon';
-			winnerIcon.textContent = '✓';
-			title.appendChild(winnerIcon);
-		}
-		
-		const titleText = document.createTextNode(cat.title);
-		title.appendChild(titleText);
-		
-		const info = document.createElement('div'); info.style.color = 'var(--muted)'; info.style.fontSize = '13px';
-		const total = cat.games.length;
-		const winnerAssigned = hasWinner ? ' · Ganador marcado' : '';
-		info.textContent = `${total} nominados${winnerAssigned}`;
-		m.appendChild(title); m.appendChild(info);
-		card.appendChild(m);
-		list.appendChild(card);
+			const card = document.createElement('a');
+			card.className = 'card';
+			card.href = '#/category/' + cat.id;
+
+			// Verificar si la categoría tiene ganador
+			const hasWinner = STATE.winners[cat.id];
+			if (hasWinner) {
+				card.classList.add('has-winner');
+			}
+
+			// Añadir .has-winner si el usuario activo tiene nominación en esta categoría
+			const userHasNomination = userInitials && STATE.nominations && STATE.nominations[userInitials] && STATE.nominations[userInitials][cat.id];
+			if (userHasNomination) {
+				card.classList.add('has-winner');
+			}
+
+			const m = document.createElement('div');
+			m.style.flex = '1';
+			const title = document.createElement('h3');
+
+			// Añadir icono de check si tiene ganador
+			if (hasWinner) {
+				const winnerIcon = document.createElement('span');
+				winnerIcon.className = 'nav-winner-icon';
+				winnerIcon.textContent = '✓';
+				title.appendChild(winnerIcon);
+			}
+
+			const titleText = document.createTextNode(cat.title);
+			title.appendChild(titleText);
+
+			const info = document.createElement('div'); info.style.color = 'var(--muted)'; info.style.fontSize = '13px';
+			const total = cat.games.length;
+			const winnerAssigned = hasWinner ? ' · Ganador marcado' : '';
+			info.textContent = `${total} nominados${winnerAssigned}`;
+			m.appendChild(title); m.appendChild(info);
+			card.appendChild(m);
+			list.appendChild(card);
 		});
 	};
 	
@@ -737,15 +751,18 @@ function renderCategory(catId) {
 	mainEl.appendChild(header);
 
 	const grid = document.createElement('div'); grid.className = 'nominees-grid';
+	const userInitials = getActiveUserInitials();
+	const userHasNomination = userInitials && STATE.nominations && STATE.nominations[userInitials] && STATE.nominations[userInitials][catId];
+
 	cat.games.forEach(game => {
 		const gid = game.id;
 		const gname = game.name || guessNameFromId(gid);
 		// Usar nominación del usuario activo
-		const userInitials = getActiveUserInitials();
 		const isWinner = getNomination(catId) === gid;
 
 		const card = document.createElement('div');
-		card.className = 'nominee-card' + (isWinner ? ' is-winner' : '');
+		// Si el usuario ha seleccionado algún nominee en esta categoría, añadir .has-winner a todas las cards
+		card.className = 'nominee-card' + (isWinner ? ' is-winner' : '') + (userHasNomination ? ' has-winner' : '');
 
 		// Imagen principal
 		const imageContainer = document.createElement('div'); 
