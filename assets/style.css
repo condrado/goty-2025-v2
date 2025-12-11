@@ -1218,7 +1218,6 @@ input[type="radio"] {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  margin-top: 24px;
 }
 
 @media (max-width: 1200px) {
@@ -1241,7 +1240,7 @@ input[type="radio"] {
   background: var(--glass);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1356,7 +1355,6 @@ input[type="radio"] {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: calc(100vh - 589px);
   overflow-y: auto;
 }
 
@@ -1529,4 +1527,15 @@ input[type="radio"] {
     background: transparent;
     padding: 0
   }
+}
+
+.user-grid {
+  overflow: auto;
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.user-grid::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
 }
