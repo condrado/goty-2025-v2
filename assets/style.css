@@ -1,3 +1,33 @@
+#footerPointsBar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+  width: 100%;
+  justify-content: space-around;
+}
+
+.footer-points-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  font-size: 12px;
+}
+
+.footer-points-item span {
+  font-size: 11px;
+}
+
+.footer-points-item span:first-child {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.footer-points-item:has(span:first-child:contains('FIN')) {
+  display: none !important;
+}
+
 /* Forzar color blanco en el SVG del icono de borrar usuario */
 .delete-user-btn svg,
 .delete-user-btn .lucide-icon-sm {
@@ -1452,6 +1482,7 @@ input[type="radio"] {
   align-items: center;
   z-index: 900;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
 }
 
 .selection-content {
@@ -1460,6 +1491,7 @@ input[type="radio"] {
   gap: 8px;
   font-size: 14px;
   color: var(--text-primary);
+  width: 100%;
 }
 
 .selection-content #footerVoter {

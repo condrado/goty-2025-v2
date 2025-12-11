@@ -11,6 +11,12 @@ function renderHomeMain() {
 	title.innerHTML = '<i data-lucide="users" class="lucide-icon"></i> Participantes';
 	mainEl.appendChild(title);
 
+	// Asegurar que el usuario fijo "Resultado final" existe
+	if (!STATE.voters.some(v => v.initials === 'FIN')) {
+		STATE.voters.unshift({ name: 'Resultado final', initials: 'FIN' });
+		saveState(STATE);
+	}
+
 	const grid = document.createElement('div');
 	grid.className = 'user-grid';
 	const selectedInitials = localStorage.getItem('tga2025_selectedUser');
@@ -23,33 +29,35 @@ function renderHomeMain() {
 		}
 		// Selección de usuario
 		card.addEventListener('click', (e) => {
-			// Evitar que el click en el botón de borrar seleccione el usuario
 			if (e.target.classList.contains('delete-user-btn')) return;
 			localStorage.setItem('tga2025_selectedUser', voter.initials);
 			updateFooter();
 			renderHomeMain();
 		});
-		// Botón de borrar usuario
-		const deleteBtn = document.createElement('button');
-		deleteBtn.className = 'delete-user-btn';
-		deleteBtn.title = 'Eliminar participante';
-		deleteBtn.innerHTML = '<i data-lucide="x" class="lucide-icon-sm"></i>';
-		deleteBtn.addEventListener('click', (e) => {
-			e.stopPropagation();
-			if (!confirm(`¿Eliminar participante ${voter.name} (${voter.initials})?`)) return;
-			STATE.voters.splice(idx, 1);
-			// Si era el usuario seleccionado, quitar selección
-			if (selectedInitials === voter.initials) {
-				localStorage.removeItem('tga2025_selectedUser');
-			}
-			saveState(STATE);
-			renderHomeMain();
-			updateFooter();
-		});
-		card.appendChild(deleteBtn);
+		// Botón de borrar usuario (oculto para FIN)
+		if (voter.initials !== 'FIN') {
+			const deleteBtn = document.createElement('button');
+			deleteBtn.className = 'delete-user-btn';
+			deleteBtn.title = 'Eliminar participante';
+			deleteBtn.innerHTML = '<i data-lucide="x" class="lucide-icon-sm"></i>';
+			deleteBtn.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (!confirm(`¿Eliminar participante ${voter.name} (${voter.initials})?`)) return;
+				STATE.voters.splice(idx, 1);
+				if (selectedInitials === voter.initials) {
+					localStorage.removeItem('tga2025_selectedUser');
+				}
+				saveState(STATE);
+				renderHomeMain();
+				updateFooter();
+			});
+			card.appendChild(deleteBtn);
+		}
 		grid.appendChild(card);
 	});
 	mainEl.appendChild(grid);
+	// Actualizar barra de puntos tras renderizar nominees
+	updateFooter();
 
 	// Lógica para añadir nuevo participante
 	const newInput = document.getElementById('newParticipantInput');
@@ -245,6 +253,36 @@ requestAnimationFrame(() => ajustarAlturaGrid('.nominees-grid'));
 window.addEventListener('resize', () => ajustarAlturaGrid('.nominees-grid'));
 
 function updateFooter() {
+		// Barra de puntos de usuarios en el footer (siempre visible)
+		let pointsBar = document.getElementById('footerPointsBar');
+		if (!pointsBar) {
+			pointsBar = document.createElement('div');
+			pointsBar.id = 'footerPointsBar';
+			const selectionContent = document.querySelector('.selection-content');
+			if (selectionContent && selectionContent.parentElement) {
+				selectionContent.parentElement.insertBefore(pointsBar, selectionContent.nextSibling);
+			}
+		}
+		// Calcular puntos
+		const scores = (typeof computeScores === 'function') ? computeScores() : {};
+		pointsBar.innerHTML = '';
+		// Ordenar por puntos descendente
+		const sortedVoters = STATE.voters
+			.filter(v => v.initials !== 'FIN' && v.name !== 'Resultado final')
+			.sort((a, b) => (scores[b.initials] || 0) - (scores[a.initials] || 0));
+		sortedVoters.forEach(voter => {
+			const item = document.createElement('div');
+			item.className = 'footer-points-item';
+			// Nombre o siglas
+			const initials = document.createElement('span');
+			initials.textContent = voter.initials;
+			// Puntos
+			const pts = document.createElement('span');
+			pts.textContent = (scores[voter.initials] || 0) + ' pts';
+			item.appendChild(initials);
+			item.appendChild(pts);
+			pointsBar.appendChild(item);
+		});
 	const voterEl = document.getElementById('footerVoter');
 	const nomineeEl = document.getElementById('footerNominee');
 	const separatorEl = document.querySelector('.footer-separator');
@@ -383,12 +421,6 @@ function renderNav(activeId) {
 	home.innerHTML = '<i data-lucide="trophy" class="lucide-icon"></i> Categorías';
 	fixedLinks.appendChild(home);
 
-	// Ranking
-	const rank = document.createElement('a');
-	rank.href = '#/ranking';
-	rank.className = activeId === 'ranking' ? 'active nav-link-row' : 'nav-link-row';
-	rank.innerHTML = '<i data-lucide="bar-chart-3" class="lucide-icon"></i> Desglose del ranking';
-	fixedLinks.appendChild(rank);
 
 	// Bingo
 	const bingo = document.createElement('a');
@@ -897,13 +929,18 @@ function renderRanking() {
 
 function computeScores() {
 	const scores = {};
-	getVoters().forEach(v => scores[v] = 0);
+	// Solo usuarios distintos de FIN
+	STATE.voters.forEach(v => {
+		if (v.initials !== 'FIN') scores[v.initials] = 0;
+	});
 	CATEGORIES.forEach(cat => {
-		const winner = STATE.winners[cat.id];
-		if (!winner) return;
-		getVoters().forEach(v => {
-			const pred = STATE.predictions[cat.id] && STATE.predictions[cat.id][v];
-			if (pred && pred === winner) scores[v] += 1;
+		// El valor de referencia es la nominación de FIN
+		const finalNom = STATE.nominations && STATE.nominations['FIN'] ? STATE.nominations['FIN'][cat.id] : null;
+		if (!finalNom) return;
+		STATE.voters.forEach(v => {
+			if (v.initials === 'FIN') return;
+			const pred = STATE.nominations && STATE.nominations[v.initials] ? STATE.nominations[v.initials][cat.id] : null;
+			if (pred && pred === finalNom) scores[v.initials] += 1;
 		});
 	});
 	return scores;
@@ -1242,7 +1279,10 @@ function route() {
 	}
 }
 
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => {
+	route();
+	updateFooter();
+});
 
 	document.getElementById('resetAll').addEventListener('click', () => {
 	if (!confirm('¿Restablecer todas las predicciones, ganadores y participantes? (se borrará todo del localStorage)')) return;
